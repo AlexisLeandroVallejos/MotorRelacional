@@ -3,12 +3,11 @@ import matplotlib.pyplot as plt
 import psycopg2
 import geopandas
 
-RUTA_ARCHIVO = r'F:\PythonProjects\MotorRelacional\Graficador\ne_10m_admin_0_countries.shp'
+RUTA_ARCHIVO = r'.\ne_10m_admin_0_countries.shp'
 NOMBRE_DATABASE = "world"
 USUARIO = "postgres"
 CONTRASENIA = "postgres"
 HOST = "localhost"
-
 
 query = "SELECT name, population FROM country"
 
