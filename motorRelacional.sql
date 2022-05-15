@@ -243,3 +243,27 @@ AS
 WHERE 
 	STATS.COUNTRYCODE = SUBQUERY.CODE;
 */
+
+----------EJERCICIO5----------
+--1--
+select *
+from sitio s1 ,sitio s2
+where s1.countrycode = s2.countrycode
+and s1.entidad like 'a%' and s2.entidad like 'b%'
+limit 100;
+
+/*
+La consulta obtiene los primeros 100 sitios que pertenezcan al mismo pais y que tengan una entidad que empiece con la letra a (s1) o b (s2)
+*/
+--2--
+explain plan select *
+from sitio s1 ,sitio s2
+where s1.countrycode = s2.countrycode
+and s1.entidad like 'a%' and s2.entidad like 'b%'
+limit 100;
+
+--3--
+CREATE INDEX COUNTRYCODE ON SITIO(COUNTRYCODE);
+
+--4--
+/*analizar*/
