@@ -25,6 +25,15 @@ FROM
     COUNTRY
 """
 
+queryCantSitiosMundial = """
+SELECT 
+    COUNTRYCODE, COUNT(PAIS) AS CANTIDADSITIOS
+FROM 
+    SITIO
+GROUP BY
+    COUNTRYCODE
+"""
+
 #leer archivo geografico:
 #(renombrando columna para que el merge funcione despues)
 gpdworld = gpd.read_file(RUTA_ARCHIVO).rename(columns = {'ADM0_A3': 'code'})
@@ -42,6 +51,10 @@ try:
     #traer de la BD las consultas como dataframes
     dfCountryCodeYPoblacion = pd.read_sql(queryPoblacionMundial, conexion)
     dfCountryCodeYGnp = pd.read_sql(queryProductoBrutoMundial, conexion)
+        # sitio.countrycode debe matchear con gdpworld.code:
+    dfCountryCodeYCantSitios = pd.read_sql(queryCantSitiosMundial, conexion).rename(columns={'countrycode': 'code'})
+
+
 
 # excepcion por algun error
 except (Exception, psycopg2.Error) as error:
@@ -64,25 +77,41 @@ finally:
         on = 'code', how = 'inner'
     )
 
+    dataFrameDeSitiosMundial = pd.merge(
+        gpdworld, dfCountryCodeYCantSitios,
+        on='code', how='inner'
+    )
+
 if '__main__':
     #mapas:
-    poblacionMundial = dataFrameDePoblacionMundial.plot(column='population',
-                                  cmap = 'nipy_spectral',
-                                  alpha=0.5,
-                                  categorical=False,
-                                  legend=True,
-                                  axes=None)
+    poblacionMundial = dataFrameDePoblacionMundial.plot(
+        column='population',
+        cmap = 'nipy_spectral',
+        alpha=0.5,
+        categorical=False,
+        legend=True,
+        ax=None)
 
-    pbiMundial = dataFrameDeGnpMundial.plot(column='gnp',
-                            cmap='nipy_spectral',
-                            alpha=0.5,
-                            categorical=False,
-                            legend=True,
-                            axes=None)
+    pbiMundial = dataFrameDeGnpMundial.plot(
+        column='gnp',
+        cmap='nipy_spectral',
+        alpha=0.5,
+        categorical=False,
+        legend=True,
+        ax=None)
+
+    sitiosMundial = dataFrameDeSitiosMundial.plot(
+        column='cantidadsitios',
+        cmap='nipy_spectral',
+        alpha=0.5,
+        categorical=False,
+        legend=True,
+        ax=None)
 
     #titulo
     poblacionMundial.set_title("Poblacion Mundial")
     pbiMundial.set_title("PBI Mundial")
+    sitiosMundial.set_title("Cantidad de sitios por pais")
 
     #mostrar todas
     plt.show()

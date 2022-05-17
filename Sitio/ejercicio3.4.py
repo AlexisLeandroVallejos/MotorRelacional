@@ -24,6 +24,7 @@ def getSiteData(siteRow):
 
 # Se crea la conexion a la database
 connection = psycopg2.connect(database="world", user="postgres", password="123456")
+#connection = psycopg2.connect(database="world", user="postgres", password="postgres")
 cursor = connection.cursor()
 
 # Se crea la tabla sitio
@@ -61,4 +62,3 @@ cursor.execute(query + (args))
 connection.commit()
 
 connection.close()
-

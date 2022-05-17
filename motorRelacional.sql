@@ -247,16 +247,21 @@ WHERE
 ----------EJERCICIO5----------
 --1--
 select *
-from sitio s1 ,sitio s2
+from sitio s1, sitio s2
 where s1.countrycode = s2.countrycode
 and s1.entidad like 'a%' and s2.entidad like 'b%'
 limit 100;
 
 /*
-La consulta obtiene los primeros 100 sitios que pertenezcan al mismo pais y que tengan una entidad que empiece con la letra a (s1) o b (s2)
+La consulta trae todas las columnas de sitio, donde sitio(s1) estara acoplado a una copia(s2) con condicion:
+- countrycode de s1 sera igual a countrycode de s2
+- entidad de s1 empezara con la letra 'a'
+- entidad de s2 empezara con la letra 'b'
+- limitar la consulta a las primeras 100 filas
 */
+
 --2--
-explain plan select *
+explain select *
 from sitio s1 ,sitio s2
 where s1.countrycode = s2.countrycode
 and s1.entidad like 'a%' and s2.entidad like 'b%'
@@ -266,4 +271,10 @@ limit 100;
 CREATE INDEX COUNTRYCODE ON SITIO(COUNTRYCODE);
 
 --4--
-/*analizar*/
+/*
+Segun las imagenes, se puede ver como los datos son organizados para lograr la consulta, 
+cada procedimiento necesario para realizarla. 
+Cuando se compara el explain previo a la creacion del indice con el posterior,
+se observa una reduccion del costo de la consulta. El indice permite una organizacion de datos mas rapida
+y por ende una ejecucion mas rapida de la consulta.
+*/
