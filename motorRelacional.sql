@@ -244,6 +244,13 @@ WHERE
 	STATS.COUNTRYCODE = SUBQUERY.CODE;
 */
 
+----------EJERCICIO4----------
+SELECT * FROM sitio;
+
+/*
+SELECT * FROM sitio2
+ORDER BY ID;
+*/
 ----------EJERCICIO5----------
 --1--
 select *

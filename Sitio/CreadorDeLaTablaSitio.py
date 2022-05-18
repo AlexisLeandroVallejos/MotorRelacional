@@ -1,96 +1,187 @@
-import pandas
+import csv
+import os
+import pandas as pd
 import psycopg2
 
-RUTA_CSV = r'.\top-1m.csv'
+CSV_PATH = r'.\top-1m.csv'
 NOMBRE_DATABASE = "world"
 USUARIO = "postgres"
 CONTRASENIA = "postgres"
 HOST = "localhost"
-#con esto guardo en la entidad a blogforha.uol y forha.uol:
-REGEX_SEPARADOR = r'[.,]'
 
-#primer punto: obtener countrycode y cctld del BD
-def generarDiccionario():
-    try:
-        query = "SELECT CODE, CODE2 FROM COUNTRY"
+queryCountryCodeYCctld = "SELECT CODE, CODE2 FROM COUNTRY"
 
-        conexion = psycopg2.connect(
-            database = NOMBRE_DATABASE,
-            user = USUARIO,
-            password = CONTRASENIA,
-            host = HOST)
+queryDropTabla = """
+    DROP TABLE IF EXISTS sitio2;
+"""
 
-        apuntador = conexion.cursor()
+queryCrearTabla = """
+    CREATE TABLE IF NOT EXISTS sitio2(
+        id int NOT NULL,
+        entidad varchar,
+        subentidad varchar,
+        subentidad2 varchar,
+        tipo_entidad varchar,
+        pais varchar,
+        countrycode char(3),
+        PRIMARY KEY (id),
+        FOREIGN KEY (countrycode) REFERENCES COUNTRY(CODE)
+    );
+"""
 
-        apuntador.execute(query)
+#filtros, segun cantidad de campos:
+def tieneCuatroCampos(country, entity, index, item, splitedDomain, subentity, subentity2, type):
+    if len(splitedDomain) == 4:
+        if len(splitedDomain[3]) == 2:
+            if (index == 0):
+                entity = item
+            elif (index == 1):
+                subentity = item
+            elif (index == 2):
+                type = item
+            elif (index == 3):
+                country = item
+        else:
+            if (index == 0):
+                entity = item
+            elif (index == 1):
+                subentity = item
+            elif (index == 2):
+                subentity2 = item
+            elif (index == 3):
+                type = item
+    return country, entity, subentity, subentity2, type
 
-        listaCountryCodeCcTLD = apuntador.fetchall()
 
-        dominioDeNivelSuperiorGeográfico = {}
+def tieneTresCampos(country, entity, index, item, splitedDomain, subentity, type):
+    if len(splitedDomain) == 3:
+        if len(splitedDomain[2]) == 2:
+            if (index == 0):
+                entity = item
+            elif (index == 1):
+                type = item
+            elif (index == 2):
+                country = item
+        else:
+            if (index == 0):
+                entity = item
+            elif (index == 1):
+                subentity = item
+            elif (index == 2):
+                type = item
+    return country, entity, subentity, type
 
-        for (countryCode, ccTLD) in listaCountryCodeCcTLD:
-            dominioDeNivelSuperiorGeográfico[ccTLD] = countryCode
 
-    # excepcion por algun error
-    except (Exception, psycopg2.Error) as error:
-        print("Error al obtener la informacion", error)
+def tieneDosCampos(country, entity, index, item, splitedDomain, type):
+    if len(splitedDomain) == 2:
+        if len(splitedDomain[1]) == 2:
+            if (index == 0):
+                entity = item
+            elif (index == 1):
+                country = item
+        else:
+            if (index == 0):
+                entity = item
+            elif (index == 1):
+                type = item
+    return country, entity, type
 
-    # cerrar apuntador y conexion
-    finally:
-        if conexion:
-            apuntador.close()
-            conexion.close()
-            print("Conexion con PostgreSQL cerrada")
+def getSiteData(siteRow):
+    # Se asignan los datos de cada registro
+    id, entity, subentity, subentity2, type, country = "", "", "", "", "", ""
+    splitedDomain = siteRow[1].split('.')
+    id = siteRow[0]
 
-    return dominioDeNivelSuperiorGeográfico
+    for index, item in enumerate(splitedDomain):
+        country, entity, type = tieneDosCampos(country, entity, index, item, splitedDomain, type)
+        country, entity, subentity, type = tieneTresCampos(country, entity, index, item, splitedDomain, subentity, type)
+        country, entity, subentity, subentity2, type = tieneCuatroCampos(country, entity, index, item, splitedDomain, subentity, subentity2, type)
+    return (id, entity, subentity, subentity2, type, country)
 
-def creacionDataFrame():
-#segundo punto: separa el nro de orden y el dominio
-    indiceColumna = ['nroOrden', 'dominio1', 'dominio2', 'dominio3', 'dominio4']
-#registros con 5 campos:
-#1609,folha.uol.com.br
-#24005,blogfolha.uol.com.br
-    millonDf = pandas.read_csv(RUTA_CSV,
-                           header = None,
-                           sep = REGEX_SEPARADOR,
-                           names = indiceColumna)
-    return millonDf
+with open(CSV_PATH) as csv_file:
+    csv_reader = csv.reader(csv_file, delimiter=',')
+    data = []
+    for siteRow in csv_reader:
+        data.append(getSiteData(siteRow))
 
-def creacionDeLaTabla():
-    try:
-        query = "CREATE TABLE IF NOT EXISTS SITIO(" \
-                "ID INT NOT NULL PRIMARY KEY," \
-                "ENTIDAD VARCHAR," \
-                "PAIS VARCHAR," \
-                "EXTRA VARCHAR," \
-                "COUNTRYCODE CHAR(3) FOREIGN KEY REFERENCES COUNTRY.CODE);"
+try:
+    #conectar, usar apuntador para queries
+    dominioDeNivelSuperiorGeográfico = {}
 
-        conexion = psycopg2.connect(
-            database = NOMBRE_DATABASE,
-            user = USUARIO,
-            password = CONTRASENIA,
-            host = HOST)
+    columnasSinCountryCode = ['id',
+                              'entidad',
+                              'subentidad',
+                              'subentidad2',
+                              'tipoEntidad',
+                              'pais']
 
-        apuntador = conexion.cursor()
+    #conexion
+    conexion = psycopg2.connect(
+        database = NOMBRE_DATABASE,
+        user = USUARIO,
+        password = CONTRASENIA,
+        host = HOST)
 
-        apuntador.execute(query)
+    #cursor
+    apuntador = conexion.cursor()
 
-        listaCountryCodeCcTLD = apuntador.fetchall()
+    # Traer la consulta queryCountryCodeYCctld
+    apuntador.execute(queryCountryCodeYCctld)
 
-        dominioDeNivelSuperiorGeográfico = {}
+    #listaDeTuplas del BD
+    listaCountryCodeCcTLD = apuntador.fetchall()
 
-        for (countryCode, ccTLD) in listaCountryCodeCcTLD:
-            dominioDeNivelSuperiorGeográfico[ccTLD] = countryCode
+    #lower para poder reemplazar despues
+    #...
+    for (countryCode, ccTLD) in listaCountryCodeCcTLD:
+        dominioDeNivelSuperiorGeográfico[ccTLD.lower()] = countryCode.lower()
 
-    # excepcion por algun error
-    except (Exception, psycopg2.Error) as error:
-        print("Error al obtener la informacion", error)
+    #----dataframe del csv filtrado----
+    millonSinCountryCode = pd.DataFrame(data, columns = columnasSinCountryCode)
 
-    # cerrar apuntador y conexion
-    finally:
-        if conexion:
-            apuntador.close()
-            conexion.close()
-            print("Conexion con PostgreSQL cerrada")
+    #dataframe de la consulta countrycode, pais
+    columnasCountryCodePais = ['countrycode', 'pais']
+    dfCountryCodePais = pd.DataFrame(listaCountryCodeCcTLD, columns = columnasCountryCodePais)
 
-    return dominioDeNivelSuperiorGeográfico
+    #reemplazar por minusculas para matchear columna del merge
+    dfCountryCodePais['pais'] = dfCountryCodePais['pais'].str.lower()
+
+    #reemplazar valores faltantes de pais para hacer el match con merge
+    millonSinCountryCode['pais'] = millonSinCountryCode['pais'].replace(to_replace ='', value ='us')
+
+    #merge
+    millonConCountryCode = pd.merge(
+        millonSinCountryCode, dfCountryCodePais,
+        on = 'pais', how = 'inner')
+    #millonConCountryCode.subentidad2.value_counts()
+
+    #drop tabla si existe
+    apuntador.execute(queryDropTabla)
+
+    #crear tabla
+    apuntador.execute(queryCrearTabla)
+
+    #mandar el dataframe a csv
+    PATH_DFMILLONCSV = './dataframe_millon.csv'
+    millonConCountryCode.to_csv(PATH_DFMILLONCSV, index = False, header = False)
+
+    #leer archivo
+    archivo = open(PATH_DFMILLONCSV, 'r')
+
+    #copiar al postgresql
+    apuntador.copy_from(archivo, 'sitio2', sep = ',')
+    conexion.commit()
+
+# excepcion por algun error
+except (Exception, psycopg2.Error) as error:
+    os.remove(PATH_DFMILLONCSV)
+    print("Error al obtener la informacion", error)
+    conexion.rollback()
+    apuntador.close()
+
+# cerrar apuntador y conexion
+finally:
+    if conexion:
+        apuntador.close()
+        conexion.close()
+        print("Conexion con PostgreSQL cerrada")
