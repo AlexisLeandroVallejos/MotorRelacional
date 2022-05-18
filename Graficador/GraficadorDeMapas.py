@@ -62,7 +62,7 @@ try:
     dfCountryCodeYGnp = pd.read_sql(queryProductoBrutoMundial, conexion)
         # sitio.countrycode debe matchear con gdpworld.code:
     dfCountryCodeYCantSitios = pd.read_sql(queryCantSitiosMundial, conexion).rename(columns={'countrycode': 'code'})
-    dfCountryCodeYCantSitios2 = pd.read_sql(queryCantSitiosMundial2, conexion).rename(columns = {'countrycode': 'code'})
+    #dfCountryCodeYCantSitios2 = pd.read_sql(queryCantSitiosMundial2, conexion).rename(columns = {'countrycode': 'code'})
 
 
 # excepcion por algun error
@@ -91,10 +91,7 @@ finally:
         on='code', how='inner'
     )
 
-    dataFrameDeSitiosMundial2 = pd.merge(
-        gpdworld, dfCountryCodeYCantSitios2,
-        on='code', how='inner'
-    )
+    #dataFrameDeSitiosMundial2 = pd.merge(gpdworld, dfCountryCodeYCantSitios2,on='code', how='inner')
 
 if '__main__':
     #mapas:
@@ -122,6 +119,7 @@ if '__main__':
         legend=True,
         ax=None)
 
+    """
     sitiosMundial2 = dataFrameDeSitiosMundial2.plot(
         column='cantidadsitios',
         cmap='nipy_spectral',
@@ -129,12 +127,13 @@ if '__main__':
         categorical=False,
         legend=True,
         ax=None)
+"""
 
     #titulo
     poblacionMundial.set_title("Poblacion Mundial")
     pbiMundial.set_title("PBI Mundial")
     sitiosMundial.set_title("Cantidad de sitios por pais")
-    sitiosMundial2.set_title("Cantidad de sitios por pais")
+    #sitiosMundial2.set_title("Cantidad de sitios por pais")
 
     #mostrar todas
     plt.show()
