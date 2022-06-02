@@ -75,65 +75,81 @@ finally:
         conexion.close()
         print("Conexion con PostgreSQL cerrada")
 
-    #Unir a un dataframe nuevo, uniendo dataframes gdpworld y consultas
-    dataFrameDePoblacionMundial = pd.merge(
-        gpdworld, dfCountryCodeYPoblacion,
-        on = 'code', how = 'inner'
-    )
+#Unir a un dataframe nuevo, uniendo dataframes gdpworld y consultas
+dataFrameDePoblacionMundial = pd.merge(
+    gpdworld, dfCountryCodeYPoblacion,
+    on = 'code', how = 'inner'
+)
 
-    dataFrameDeGnpMundial = pd.merge(
-        gpdworld, dfCountryCodeYGnp,
-        on = 'code', how = 'inner'
-    )
+dataFrameDeGnpMundial = pd.merge(
+    gpdworld, dfCountryCodeYGnp,
+    on = 'code', how = 'inner'
+)
 
-    dataFrameDeSitiosMundial = pd.merge(
-        gpdworld, dfCountryCodeYCantSitios,
-        on='code', how='inner'
-    )
+dataFrameDeSitiosMundial = pd.merge(
+    gpdworld, dfCountryCodeYCantSitios,
+    on='code', how='inner'
+)
 
-    #dataFrameDeSitiosMundial2 = pd.merge(gpdworld, dfCountryCodeYCantSitios2,on='code', how='inner')
+#dataFrameDeSitiosMundial2 = pd.merge(gpdworld, dfCountryCodeYCantSitios2,on='code', how='inner')
 
-if '__main__':
-    #mapas:
-    poblacionMundial = dataFrameDePoblacionMundial.plot(
-        column='population',
-        cmap = 'nipy_spectral',
-        alpha=0.5,
-        categorical=False,
-        legend=True,
-        ax=None)
+# previamente, aplicar logaritmo a column
+#Evitar ceros al aplicar logaritmo:
+dataFrameDePoblacionMundial.population = np.log(
+    dataFrameDePoblacionMundial.population,
+    out = np.zeros_like(dataFrameDePoblacionMundial.population),
+    where = (dataFrameDePoblacionMundial.population != 0))
 
-    pbiMundial = dataFrameDeGnpMundial.plot(
-        column='gnp',
-        cmap='nipy_spectral',
-        alpha=0.5,
-        categorical=False,
-        legend=True,
-        ax=None)
+dataFrameDeGnpMundial.gnp = np.log(
+    dataFrameDeGnpMundial.gnp,
+    out = np.zeros_like(dataFrameDeGnpMundial.gnp),
+    where = (dataFrameDeGnpMundial.gnp != 0))
 
-    sitiosMundial = dataFrameDeSitiosMundial.plot(
-        column='cantidadsitios',
-        cmap='nipy_spectral',
-        alpha=0.5,
-        categorical=False,
-        legend=True,
-        ax=None)
+dataFrameDeSitiosMundial.cantidadsitios = np.log(
+    dataFrameDeSitiosMundial.cantidadsitios,
+    out = np.zeros_like(dataFrameDeSitiosMundial.cantidadsitios),
+    where = (dataFrameDeSitiosMundial.cantidadsitios != 0))
 
-    """
-    sitiosMundial2 = dataFrameDeSitiosMundial2.plot(
-        column='cantidadsitios',
-        cmap='nipy_spectral',
-        alpha=0.5,
-        categorical=False,
-        legend=True,
-        ax=None)
+#mapas:
+poblacionMundial = dataFrameDePoblacionMundial.plot(
+    column='population',
+    cmap = 'Greens',
+    alpha=0.5,
+    categorical=False,
+    legend=True,
+    ax=None)
+
+pbiMundial = dataFrameDeGnpMundial.plot(
+    column='gnp',
+    cmap='Greens',
+    alpha=0.5,
+    categorical=False,
+    legend=True,
+    ax=None)
+
+sitiosMundial = dataFrameDeSitiosMundial.plot(
+    column='cantidadsitios',
+    cmap='Greens',
+    alpha=0.5,
+    categorical=False,
+    legend=True,
+    ax=None)
+
+"""
+sitiosMundial2 = dataFrameDeSitiosMundial2.plot(
+    column='cantidadsitios',
+    cmap='nipy_spectral',
+    alpha=0.5,
+    categorical=False,
+    legend=True,
+    ax=None)
 """
 
-    #titulo
-    poblacionMundial.set_title("Poblacion Mundial")
-    pbiMundial.set_title("PBI Mundial")
-    sitiosMundial.set_title("Cantidad de sitios por pais")
-    #sitiosMundial2.set_title("Cantidad de sitios por pais")
+#titulo
+poblacionMundial.set_title("Poblacion Mundial")
+pbiMundial.set_title("PBI Mundial")
+sitiosMundial.set_title("Cantidad de sitios por pais")
+#sitiosMundial2.set_title("Cantidad de sitios por pais")
 
-    #mostrar todas
-    plt.show()
+#mostrar todas
+plt.show()
